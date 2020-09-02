@@ -22,11 +22,11 @@ struct Opt {
     output: Option<PathBuf>,
 
     /// Width of each icon.
-    #[structopt(short = "x", long = "width", default_value = "10")]
+    #[structopt(short = "w", long = "width", default_value = "10")]
     width: u32,
 
     /// Height of each icon.
-    #[structopt(short = "y", long = "height", default_value = "10")]
+    #[structopt(short = "g", long = "height", default_value = "10")]
     height: u32,
 
     /// How many columns of icons to generate.
@@ -54,6 +54,18 @@ struct Opt {
     /// Random if not specified.
     #[structopt(short = "s", long = "seed")]
     seed: Option<u64>,
+
+    /// Make all icons use the same colors.
+    #[structopt(short, long)]
+    uniform_colors: bool,
+
+    /// Mirror the icons on the x axis.
+    #[structopt(short, long)]
+    x_mirror: bool,
+
+    /// Mirror the icons on the y axis.
+    #[structopt(short, long)]
+    y_mirror: bool,
 }
 
 fn main() -> Result<()> {
@@ -94,6 +106,7 @@ fn main() -> Result<()> {
         }
     };
 
+    // Check the range on the color chance input.
     if opt.color_chance > 100 {
         println!(
             "Error: \"color_chance\" should be in the range [0, 100]. Got: \"{}\"",
@@ -123,9 +136,9 @@ fn main() -> Result<()> {
         opt.padding,
         opt.colors,
         opt.color_chance,
-        false,
-        true,
-        false,
+        !opt.uniform_colors,
+        opt.x_mirror,
+        opt.y_mirror,
     );
 
     println!("Saving to: {}", out_name.display());
