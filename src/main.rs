@@ -1,5 +1,5 @@
 use anyhow::Result;
-use image::{GenericImage, GenericImageView, RgbImage, SubImage};
+use image::{GenericImage, GenericImageView, Rgb, RgbImage, SubImage};
 use rand::Rng;
 use std::path::Path;
 
@@ -10,7 +10,7 @@ fn main() -> Result<()> {
 
     std::fs::create_dir_all(output_dir)?;
 
-    let img = generate_image(10, 20, 5, 4, 4, 3, 30);
+    let img = generate_image(10, 20, 5, 4, 4, 3, 30, false, true, false);
 
     // Get a filename which does not yet exist.
     // TODO: check if it is indeed unique?
@@ -21,32 +21,43 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// color_chance: [0-100] where 100 is fully colored.
+/// color_amount: How many random colors will be used.
+/// color_chance: [0-100] where 100 is fully colored and 0 is all black.
+/// new_colors_for_every_cell: Whether to select new random colors for every cell or not.
 fn generate_image(
     cell_width: u32,
     cell_height: u32,
     columns: u32,
     rows: u32,
     padding: u32,
-    colors_per_cell: usize,
+    color_amount: usize,
     color_chance: u32,
+    new_colors_for_every_cell: bool,
+    mirror_cell_x: bool,
+    mirror_cell_y: bool,
 ) -> RgbImage {
     let mut img = RgbImage::new(
         (cell_width + padding) * columns + padding,
         (cell_height + padding) * rows + padding,
     );
 
+    let mut colors = generate_color_set(color_amount);
+
     for col in 0..columns {
         for row in 0..rows {
             let x = padding + (cell_width + padding) * col;
             let y = padding + (cell_height + padding) * row;
 
+            if new_colors_for_every_cell {
+                colors = generate_color_set(color_amount);
+            }
+
             generate_glyph(
                 &mut img.sub_image(x, y, cell_width, cell_height),
-                colors_per_cell,
+                &colors,
                 color_chance,
-                false,
-                true,
+                mirror_cell_x,
+                mirror_cell_y,
             );
         }
     }
@@ -55,22 +66,15 @@ fn generate_image(
 }
 
 ///
-/// num_colors: How many random colors to use.
 /// color_chance: What is the chance a pixel gets a color. Scale [0-100]
 fn generate_glyph(
     img: &mut SubImage<&mut RgbImage>,
-    num_colors: usize,
+    colors: &Vec<Rgb<u8>>,
     color_chance: u32,
     mirror_x: bool,
     mirror_y: bool,
 ) {
     let mut rng = rand::thread_rng();
-
-    let mut colors = Vec::new();
-
-    for _ in 0..num_colors {
-        colors.push(image::Rgb([rng.gen(), rng.gen(), rng.gen()]));
-    }
 
     let x_end = if mirror_x {
         // Even or odd width?
@@ -120,4 +124,15 @@ fn generate_glyph(
             }
         }
     }
+}
+
+fn generate_color_set(amount: usize) -> Vec<Rgb<u8>> {
+    let mut rng = rand::thread_rng();
+    let mut colors = Vec::new();
+
+    for _ in 0..amount {
+        colors.push(image::Rgb([rng.gen(), rng.gen(), rng.gen()]));
+    }
+
+    colors
 }
