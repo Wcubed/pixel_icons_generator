@@ -10,7 +10,7 @@ fn main() -> Result<()> {
 
     std::fs::create_dir_all(output_dir)?;
 
-    let img = generate_image(10, 100, 10, 2);
+    let img = generate_image(10, 20, 5, 4, 4, 3, 30);
 
     // Get a filename which does not yet exist.
     // TODO: check if it is indeed unique?
@@ -21,21 +21,33 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn generate_image(column_width: u32, column_height: u32, n_columns: u32, padding: u32) -> RgbImage {
+/// color_chance: [0-100] where 100 is fully colored.
+fn generate_image(
+    cell_width: u32,
+    cell_height: u32,
+    columns: u32,
+    rows: u32,
+    padding: u32,
+    colors_per_cell: usize,
+    color_chance: u32,
+) -> RgbImage {
     let mut img = RgbImage::new(
-        (column_width + padding) * n_columns + padding,
-        column_height + padding * 2,
+        (cell_width + padding) * columns + padding,
+        (cell_height + padding) * rows + padding,
     );
 
-    for i in 0..n_columns {
-        let x = padding + (column_width + padding) * i;
+    for col in 0..columns {
+        for row in 0..rows {
+            let x = padding + (cell_width + padding) * col;
+            let y = padding + (cell_height + padding) * row;
 
-        generate_glyph(
-            &mut img.sub_image(x, padding, column_width, column_height),
-            3,
-            20,
-            true,
-        );
+            generate_glyph(
+                &mut img.sub_image(x, y, cell_width, cell_height),
+                colors_per_cell,
+                color_chance,
+                true,
+            );
+        }
     }
 
     img
