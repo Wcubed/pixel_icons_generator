@@ -1,31 +1,68 @@
 use anyhow::Result;
-use clap::{App, Arg};
 use image::{GenericImage, GenericImageView, Rgb, RgbImage, SubImage};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use std::path::{Path, PathBuf};
+use structopt::StructOpt;
 
-const OUTPUT_DIR: &str = "output";
+const DEFAULT_OUTPUT_DIR: &str = "output";
+
+#[derive(StructOpt)]
+#[structopt(
+    name = "Pixel Icons Generator",
+    version = "1.0",
+    about = "Generates a number of random pixel-art icons. For example, for use as pixel spaceships.",
+    author = "Wybe Westra <wybe@ruurdwestra.nl>"
+)]
+struct Opt {
+    /// Where to save the output png.
+    /// Defaults to: "output/<random-number>.png" (won't pick the same number twice).
+    #[structopt(short = "o", long = "output", parse(from_os_str))]
+    output: Option<PathBuf>,
+}
 
 fn main() -> Result<()> {
-    let matches = App::new("Pixel Icons Generator")
-        .version("1.0")
-        .get_matches();
+    let opt = Opt::from_args();
 
-    let output_dir = Path::new(OUTPUT_DIR);
+    let out_name = match opt.output {
+        Some(path) => {
+            match path.extension() {
+                Some(ext) if ext == "png" => {
+                    // Correct extension.
+                    path
+                }
+                _ => {
+                    // Either no extension, or not the correct one.
+                    // TODO: proper logging library.
+                    println!(
+                        "Error: Can only save as png. \"{}\" is not a png.",
+                        path.display()
+                    );
+                    // Exit prematurely.
+                    return Ok(());
+                }
+            }
+        }
+        None => {
+            // No output path specified.
+            // Let's generate our own.
 
-    std::fs::create_dir_all(output_dir)?;
+            let output_dir = Path::new(DEFAULT_OUTPUT_DIR);
+            std::fs::create_dir_all(output_dir)?;
+            let mut out = random_not_existing_image_path(output_dir);
+            while out.exists() {
+                // Whoops, this one already exists.
+                // Let's generate another one.
+                out = random_not_existing_image_path(output_dir);
+            }
+            out
+        }
+    };
 
     let mut rng: StdRng = rand::SeedableRng::seed_from_u64(1);
 
     let img = generate_image(&mut rng, 10, 20, 5, 4, 4, 3, 30, false, true, false);
 
-    let mut out_name = random_not_existing_image_path(output_dir);
-    while out_name.exists() {
-        // Whoops, this one already exists.
-        // Let's generate another one.
-        out_name = random_not_existing_image_path(output_dir);
-    }
     println!("Saving to: {}", out_name.display());
     img.save(out_name)?;
 
