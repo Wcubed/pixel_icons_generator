@@ -6,6 +6,8 @@ Run `pixel_icons_generator --help` for the available command-line arguments.
 
 # Examples
 
+A few example commands with their outputs.
+
 `pixel_icons_generator -x_mirror`
 
 ![](examples/-x.png)
