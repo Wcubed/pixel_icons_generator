@@ -9,7 +9,7 @@ fn main() -> Result<()> {
 
     std::fs::create_dir_all(output_dir)?;
 
-    let img: RgbImage = ImageBuffer::new(256, 256);
+    let img = generate_image();
 
     // Get a filename which does not yet exist.
     // TODO: check if it is indeed unique?
@@ -18,4 +18,14 @@ fn main() -> Result<()> {
     img.save(out_name)?;
 
     Ok(())
+}
+
+fn generate_image() -> RgbImage {
+    let mut img: RgbImage = ImageBuffer::new(256, 256);
+
+    for pixel in img.pixels_mut() {
+        *pixel = image::Rgb([rand::random(), rand::random(), rand::random()]);
+    }
+
+    img
 }
