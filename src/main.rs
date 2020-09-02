@@ -1,12 +1,17 @@
 use anyhow::Result;
+use clap::{App, Arg};
 use image::{GenericImage, GenericImageView, Rgb, RgbImage, SubImage};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const OUTPUT_DIR: &str = "output";
 
 fn main() -> Result<()> {
+    let matches = App::new("Pixel Icons Generator")
+        .version("1.0")
+        .get_matches();
+
     let output_dir = Path::new(OUTPUT_DIR);
 
     std::fs::create_dir_all(output_dir)?;
@@ -15,15 +20,23 @@ fn main() -> Result<()> {
 
     let img = generate_image(&mut rng, 10, 20, 5, 4, 4, 3, 30, false, true, false);
 
-    // Get a filename which does not yet exist.
-    // We don't use the seeded rng on purpose, because we want this to be different even if the
-    // seed is the same.
-    // TODO: check if it is indeed unique?
-    let out_name = output_dir.join(format!("{}.png", rand::random::<u16>()));
+    let mut out_name = random_not_existing_image_path(output_dir);
+    while out_name.exists() {
+        // Whoops, this one already exists.
+        // Let's generate another one.
+        out_name = random_not_existing_image_path(output_dir);
+    }
     println!("Saving to: {}", out_name.display());
     img.save(out_name)?;
 
     Ok(())
+}
+
+/// Get an image filename which does not yet exist.
+/// We don't use the seeded rng on purpose, because we want this to be different even if the
+/// seed is the same.
+fn random_not_existing_image_path(dir: &Path) -> PathBuf {
+    dir.join(format!("{}.png", rand::random::<u16>()))
 }
 
 /// color_amount: How many random colors will be used.

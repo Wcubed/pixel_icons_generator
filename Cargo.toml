@@ -1,5 +1,5 @@
 [package]
-name = "art_generator"
+name = "pixel_icons_generator"
 version = "0.1.0"
 authors = ["Wybe <wybe@ruurdwestra.nl>"]
 edition = "2018"
@@ -10,3 +10,4 @@ edition = "2018"
 image = "*"
 anyhow = "*"
 rand = "*"
+clap = "*"
