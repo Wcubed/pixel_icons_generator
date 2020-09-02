@@ -10,7 +10,7 @@ fn main() -> Result<()> {
 
     std::fs::create_dir_all(output_dir)?;
 
-    let img = generate_image(100, 100, 3, 1);
+    let img = generate_image(10, 100, 10, 2);
 
     // Get a filename which does not yet exist.
     // TODO: check if it is indeed unique?
@@ -21,18 +21,19 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn generate_image(width: u32, height: u32, n_columns: u32, padding: u32) -> RgbImage {
-    let mut img = RgbImage::new(width, height);
-    let col_width = (width - ((n_columns + 1) * padding)) / n_columns;
-    let col_height = height - padding * 2;
+fn generate_image(column_width: u32, column_height: u32, n_columns: u32, padding: u32) -> RgbImage {
+    let mut img = RgbImage::new(
+        (column_width + padding) * n_columns + padding,
+        column_height + padding * 2,
+    );
 
     for i in 0..n_columns {
-        let x = padding + (col_width + padding) * i;
+        let x = padding + (column_width + padding) * i;
 
         generate_glyph(
-            &mut img.sub_image(x, padding, col_width, col_height),
+            &mut img.sub_image(x, padding, column_width, column_height),
             3,
-            10,
+            20,
             true,
         );
     }
