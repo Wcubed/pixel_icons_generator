@@ -19,6 +19,40 @@ struct Opt {
     /// Defaults to: "output/<random-number>.png" (won't pick the same number twice).
     #[structopt(short = "o", long = "output", parse(from_os_str))]
     output: Option<PathBuf>,
+
+    /// Width of each icon.
+    #[structopt(short = "x", long = "width", default_value = "10")]
+    width: u32,
+
+    /// Height of each icon.
+    #[structopt(short = "y", long = "height", default_value = "10")]
+    height: u32,
+
+    /// How many columns of icons to generate.
+    #[structopt(short = "c", long = "columns", default_value = "10")]
+    columns: u32,
+
+    /// How many rows of icons to generate.
+    #[structopt(short = "r", long = "rows", default_value = "10")]
+    rows: u32,
+
+    /// Padding between the icons, and around the border of the image.
+    #[structopt(short = "p", long = "padding", default_value = "4")]
+    padding: u32,
+
+    /// How many random colors to use.
+    #[structopt(short = "k", long = "colors", default_value = "3")]
+    colors: usize,
+
+    /// Chance that a pixel will get colored.
+    /// Range [0, 100] where 0 is all black, and 100 is all colored.
+    #[structopt(short = "n", long = "chance", default_value = "30")]
+    color_chance: u32,
+
+    /// Seed for the random generator. Allows for repeatable output.
+    /// Random if not specified.
+    #[structopt(short = "s", long = "seed")]
+    seed: Option<u64>,
 }
 
 fn main() -> Result<()> {
@@ -59,9 +93,37 @@ fn main() -> Result<()> {
         }
     };
 
-    let mut rng: StdRng = rand::SeedableRng::seed_from_u64(1);
+    if opt.color_chance > 100 {
+        println!(
+            "Error: \"color_chance\" should be in the range [0, 100]. Got: \"{}\"",
+            opt.color_chance
+        );
+        return Ok(());
+    }
 
-    let img = generate_image(&mut rng, 10, 20, 5, 4, 4, 3, 30, false, true, false);
+    let seed = match opt.seed {
+        Some(seed) => seed,
+        None => {
+            // No seed specified. We create a random one.
+            rand::random()
+        }
+    };
+
+    let mut rng: StdRng = rand::SeedableRng::seed_from_u64(seed);
+
+    let img = generate_image(
+        &mut rng,
+        opt.width,
+        opt.height,
+        opt.columns,
+        opt.rows,
+        opt.padding,
+        opt.colors,
+        opt.color_chance,
+        false,
+        true,
+        false,
+    );
 
     println!("Saving to: {}", out_name.display());
     img.save(out_name)?;
@@ -78,39 +140,39 @@ fn random_not_existing_image_path(dir: &Path) -> PathBuf {
 
 /// color_amount: How many random colors will be used.
 /// color_chance: [0-100] where 100 is fully colored and 0 is all black.
-/// new_colors_for_every_cell: Whether to select new random colors for every cell or not.
+/// new_colors_for_every_icon: Whether to select new random colors for every icon or not.
 fn generate_image(
     rng: &mut StdRng,
-    cell_width: u32,
-    cell_height: u32,
+    icon_width: u32,
+    icon_height: u32,
     columns: u32,
     rows: u32,
     padding: u32,
     color_amount: usize,
     color_chance: u32,
-    new_colors_for_every_cell: bool,
+    new_colors_for_every_icon: bool,
     mirror_cell_x: bool,
     mirror_cell_y: bool,
 ) -> RgbImage {
     let mut img = RgbImage::new(
-        (cell_width + padding) * columns + padding,
-        (cell_height + padding) * rows + padding,
+        (icon_width + padding) * columns + padding,
+        (icon_height + padding) * rows + padding,
     );
 
     let mut colors = generate_color_set(rng, color_amount);
 
     for col in 0..columns {
         for row in 0..rows {
-            let x = padding + (cell_width + padding) * col;
-            let y = padding + (cell_height + padding) * row;
+            let x = padding + (icon_width + padding) * col;
+            let y = padding + (icon_height + padding) * row;
 
-            if new_colors_for_every_cell {
+            if new_colors_for_every_icon {
                 colors = generate_color_set(rng, color_amount);
             }
 
-            generate_glyph(
+            generate_icon(
                 rng,
-                &mut img.sub_image(x, y, cell_width, cell_height),
+                &mut img.sub_image(x, y, icon_width, icon_height),
                 &colors,
                 color_chance,
                 mirror_cell_x,
@@ -123,8 +185,8 @@ fn generate_image(
 }
 
 ///
-/// color_chance: What is the chance a pixel gets a color. Scale [0-100]
-fn generate_glyph(
+/// color_chance: What is the chance a pixel gets a color. Scale [0, 100]
+fn generate_icon(
     rng: &mut StdRng,
     img: &mut SubImage<&mut RgbImage>,
     colors: &Vec<Rgb<u8>>,
@@ -156,7 +218,7 @@ fn generate_glyph(
 
     for x in 0..x_end {
         for y in 0..y_end {
-            if rng.gen_range(0, 100) < color_chance {
+            if rng.gen_range(0, 101) < color_chance {
                 let color_id = rng.gen_range(0, colors.len());
 
                 img.put_pixel(x, y, colors[color_id].clone());
