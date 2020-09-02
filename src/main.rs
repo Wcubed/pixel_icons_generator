@@ -45,6 +45,7 @@ fn generate_image(
                 &mut img.sub_image(x, y, cell_width, cell_height),
                 colors_per_cell,
                 color_chance,
+                false,
                 true,
             );
         }
@@ -61,6 +62,7 @@ fn generate_glyph(
     num_colors: usize,
     color_chance: u32,
     mirror_x: bool,
+    mirror_y: bool,
 ) {
     let mut rng = rand::thread_rng();
 
@@ -81,8 +83,19 @@ fn generate_glyph(
         img.width()
     };
 
+    let y_end = if mirror_y {
+        // Even or odd height?
+        if img.height() % 2 == 0 {
+            img.height() / 2
+        } else {
+            img.height() / 2 + 1
+        }
+    } else {
+        img.height()
+    };
+
     for x in 0..x_end {
-        for y in 0..img.height() {
+        for y in 0..y_end {
             if rng.gen_range(0, 100) < color_chance {
                 let color_id = rng.gen_range(0, colors.len());
 
@@ -91,6 +104,18 @@ fn generate_glyph(
                 if mirror_x {
                     // Mirror over the x axis.
                     img.put_pixel(img.width() - (x + 1), y, colors[color_id].clone());
+                }
+                if mirror_y {
+                    // Mirror over the y axis.
+                    img.put_pixel(x, img.height() - (y + 1), colors[color_id].clone());
+                }
+                if mirror_x && mirror_y {
+                    // Mirror across the center.
+                    img.put_pixel(
+                        img.width() - (x + 1),
+                        img.height() - (y + 1),
+                        colors[color_id].clone(),
+                    );
                 }
             }
         }
