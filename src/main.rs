@@ -2,6 +2,7 @@ use anyhow::Result;
 use image::{GenericImage, GenericImageView, Rgb, RgbImage, SubImage};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
@@ -109,7 +110,9 @@ fn main() -> Result<()> {
         }
     };
 
-    let mut rng: StdRng = rand::SeedableRng::seed_from_u64(seed);
+    println!("Seed: {}", seed);
+
+    let mut rng: ChaCha8Rng = rand::SeedableRng::seed_from_u64(seed);
 
     let img = generate_image(
         &mut rng,
@@ -142,7 +145,7 @@ fn random_not_existing_image_path(dir: &Path) -> PathBuf {
 /// color_chance: [0-100] where 100 is fully colored and 0 is all black.
 /// new_colors_for_every_icon: Whether to select new random colors for every icon or not.
 fn generate_image(
-    rng: &mut StdRng,
+    rng: &mut ChaCha8Rng,
     icon_width: u32,
     icon_height: u32,
     columns: u32,
@@ -187,7 +190,7 @@ fn generate_image(
 ///
 /// color_chance: What is the chance a pixel gets a color. Scale [0, 100]
 fn generate_icon(
-    rng: &mut StdRng,
+    rng: &mut ChaCha8Rng,
     img: &mut SubImage<&mut RgbImage>,
     colors: &Vec<Rgb<u8>>,
     color_chance: u32,
@@ -244,7 +247,7 @@ fn generate_icon(
     }
 }
 
-fn generate_color_set(rng: &mut StdRng, amount: usize) -> Vec<Rgb<u8>> {
+fn generate_color_set(rng: &mut ChaCha8Rng, amount: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::new();
 
     for _ in 0..amount {

@@ -322,6 +322,7 @@ dependencies = [
  "anyhow",
  "image",
  "rand",
+ "rand_chacha",
  "structopt",
 ]
 

@@ -10,4 +10,5 @@ edition = "2018"
 image = "*"
 anyhow = "*"
 rand = "*"
+rand_chacha = "*" # For guaranteed repeatable randomness.
 structopt = "*"
