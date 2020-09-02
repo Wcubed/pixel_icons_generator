@@ -1,6 +1,7 @@
 use anyhow::Result;
 use image::{GenericImage, GenericImageView, Rgb, RgbImage, SubImage};
-use rand::Rng;
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use std::path::Path;
 
 const OUTPUT_DIR: &str = "output";
@@ -10,9 +11,13 @@ fn main() -> Result<()> {
 
     std::fs::create_dir_all(output_dir)?;
 
-    let img = generate_image(10, 20, 5, 4, 4, 3, 30, false, true, false);
+    let mut rng: StdRng = rand::SeedableRng::seed_from_u64(1);
+
+    let img = generate_image(&mut rng, 10, 20, 5, 4, 4, 3, 30, false, true, false);
 
     // Get a filename which does not yet exist.
+    // We don't use the seeded rng on purpose, because we want this to be different even if the
+    // seed is the same.
     // TODO: check if it is indeed unique?
     let out_name = output_dir.join(format!("{}.png", rand::random::<u16>()));
     println!("Saving to: {}", out_name.display());
@@ -25,6 +30,7 @@ fn main() -> Result<()> {
 /// color_chance: [0-100] where 100 is fully colored and 0 is all black.
 /// new_colors_for_every_cell: Whether to select new random colors for every cell or not.
 fn generate_image(
+    rng: &mut StdRng,
     cell_width: u32,
     cell_height: u32,
     columns: u32,
@@ -41,7 +47,7 @@ fn generate_image(
         (cell_height + padding) * rows + padding,
     );
 
-    let mut colors = generate_color_set(color_amount);
+    let mut colors = generate_color_set(rng, color_amount);
 
     for col in 0..columns {
         for row in 0..rows {
@@ -49,10 +55,11 @@ fn generate_image(
             let y = padding + (cell_height + padding) * row;
 
             if new_colors_for_every_cell {
-                colors = generate_color_set(color_amount);
+                colors = generate_color_set(rng, color_amount);
             }
 
             generate_glyph(
+                rng,
                 &mut img.sub_image(x, y, cell_width, cell_height),
                 &colors,
                 color_chance,
@@ -68,14 +75,13 @@ fn generate_image(
 ///
 /// color_chance: What is the chance a pixel gets a color. Scale [0-100]
 fn generate_glyph(
+    rng: &mut StdRng,
     img: &mut SubImage<&mut RgbImage>,
     colors: &Vec<Rgb<u8>>,
     color_chance: u32,
     mirror_x: bool,
     mirror_y: bool,
 ) {
-    let mut rng = rand::thread_rng();
-
     let x_end = if mirror_x {
         // Even or odd width?
         if img.width() % 2 == 0 {
@@ -126,8 +132,7 @@ fn generate_glyph(
     }
 }
 
-fn generate_color_set(amount: usize) -> Vec<Rgb<u8>> {
-    let mut rng = rand::thread_rng();
+fn generate_color_set(rng: &mut StdRng, amount: usize) -> Vec<Rgb<u8>> {
     let mut colors = Vec::new();
 
     for _ in 0..amount {
