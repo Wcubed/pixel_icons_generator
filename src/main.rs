@@ -1,6 +1,5 @@
 use anyhow::Result;
 use image::{GenericImage, GenericImageView, Rgb, RgbImage, SubImage};
-use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use std::path::{Path, PathBuf};
@@ -12,7 +11,7 @@ const DEFAULT_OUTPUT_DIR: &str = "output";
 #[structopt(
     name = "Pixel Icons Generator",
     version = "1.0",
-    about = "Generates a number of random pixel-art icons. For example, for use as pixel spaceships.",
+    about = "Generates a grid of random pixel-art icons. For example, for use as pixel spaceships.",
     author = "Wybe Westra <wybe@ruurdwestra.nl>"
 )]
 struct Opt {
@@ -234,7 +233,7 @@ fn generate_icon(
 
     for x in 0..x_end {
         for y in 0..y_end {
-            if rng.gen_range(0, 101) < color_chance {
+            if rng.gen_range(0, 100) < color_chance {
                 let color_id = rng.gen_range(0, colors.len());
 
                 img.put_pixel(x, y, colors[color_id].clone());
